@@ -36,3 +36,30 @@ body.home #portHz {
 }
 body.home #portHz small { font-size: 9px; color: #c9b48a; text-transform: uppercase; letter-spacing: .1em; }
 body.home #portHz:active, body.home #portHz:focus-visible { border-color: #ffd27a; background: #2a1a0ed0; outline: none; }
+
+/* Touch layout editor (android_port.js). */
+body.touch #touch .tb { opacity: var(--pbTouchOp, 1); }
+#pbEditBtn, #pbEditBar { display: none; }
+body.paused.touch:not(.pbEdit) #pbEditBtn {
+  display: block; position: fixed; z-index: 1000; left: calc(16px + env(safe-area-inset-left)); bottom: calc(14px + env(safe-area-inset-bottom));
+  padding: 9px 16px; border-radius: 12px; background: #0a0c16e0; color: #ffe6b0; border: 1.5px solid #ffd27a99;
+  font: 600 14px/1 "Barlow Semi Condensed", "Arial Narrow", sans-serif; letter-spacing: .05em; text-transform: uppercase;
+}
+body.pbEdit #pauseMenu { visibility: hidden !important; }
+body.pbEdit.paused #touch, body.pbEdit #touch { display: block !important; z-index: 900; }
+body.pbEdit.paused #touch #tBtns { display: block !important; }
+body.pbEdit #touch .tb { outline: 2px dashed #ffd27acc; outline-offset: 4px; opacity: max(var(--pbTouchOp, 1), .3); }
+body.pbEdit #touch .tb.pbDrag { outline-color: #fff; }
+body.pbEdit #pbEditBar {
+  display: flex; align-items: center; gap: 14px; position: fixed; z-index: 1000; top: calc(10px + env(safe-area-inset-top));
+  left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: 14px; background: #0a0c16eb;
+  border: 1.5px solid #ffd27a99; color: #f3e6cf; white-space: nowrap;
+  font: 600 14px/1 "Barlow Semi Condensed", "Arial Narrow", sans-serif; letter-spacing: .03em;
+}
+body.pbEdit #pbEditBar span { display: flex; align-items: center; gap: 6px; }
+body.pbEdit #pbEditBar i { font-style: normal; min-width: 40px; text-align: center; color: #ffe6b0; }
+body.pbEdit #pbEditBar button {
+  min-width: 34px; height: 32px; padding: 0 10px; border-radius: 9px; background: #1c1410; color: #ffe6b0;
+  border: 1px solid #ffd27a77; font: 600 15px/1 "Barlow Semi Condensed", sans-serif;
+}
+body.pbEdit #pbEditBar button.done { background: #c1271b; border-color: #ffd27a; color: #fff; }

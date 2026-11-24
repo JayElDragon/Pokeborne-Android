@@ -15,6 +15,8 @@ and Pokémon belongs to Nintendo, Game Freak and The Pokémon Company. It is not
 - **On-screen controls:** the game's own touch pad shows up as soon as a run starts (not only after the first touch),
   with a visible resting stick. Readable button labels (ATK, HEAVY, ROLL, GUARD, EXEC.).
   Using the physical controller hides them, touching the screen brings them back.
+- **Touch layout editor:** pause a run → **Touch layout** (bottom left): drag any button, change size (70–150%)
+  and opacity (30–100%), Reset, Done. Saved on the device.
 - **Smoother stick:** 15% dead zone, full speed at 92% of the travel with an eased curve, sprint only at the edge
   (the original reached full speed at 55%).
 - **60 / 120 Hz:** 60 Hz by default (at 120 Hz the unmodified game kept the GPU at 1.1 GHz / 93% and the fan loud).
@@ -43,7 +45,7 @@ breaking silently.
 |---|---|
 | `build_pokeborne.py` | builds and signs the APK, applies the build-time patches |
 | `android/` | manifest and `MainActivity.java` (WebView, asset server, 60/120 Hz bridge) |
-| `port/android_port.js` | runs first on every page: native flag, popups, touch pad, refresh option |
-| `port/android_port.css` | stick ghost, button labels, Hz pill, no scrollbars |
+| `port/android_port.js` | runs first on every page: native flag, popups, touch pad, refresh option, layout editor |
+| `port/android_port.css` | stick ghost, button labels, Hz pill, layout editor, no scrollbars |
 
 Port by JayElDragon.

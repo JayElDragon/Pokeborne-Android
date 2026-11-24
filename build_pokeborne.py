@@ -10,7 +10,7 @@ import json, os, re, secrets, shutil, subprocess, zipfile
 ROOT = Path(__file__).resolve().parent
 SITE = ROOT / 'src/site'
 GAME_VERSION = json.loads((SITE / 'version.json').read_text(encoding='utf-8'))['v'].split('+')[0]
-VERSION_CODE, VERSION_NAME = '6', GAME_VERSION + '-android6'
+VERSION_CODE, VERSION_NAME = '7', GAME_VERSION + '-android7'
 OUT = ROOT / 'Pokeborne.apk'
 sdk = Path(os.environ.get('ANDROID_SDK_ROOT') or r'C:\Users\user\AppData\Local\Android\Sdk')
 jdk = Path(os.environ.get('JAVA_HOME_17') or r'C:\Program Files\Microsoft\jdk-17.0.21.21-hotspot')

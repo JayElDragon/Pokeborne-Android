@@ -49,3 +49,116 @@ addEventListener('load', function () {
     document.body.appendChild(b);
   });
 })();
+/* Touch layout editor. Pause a run in touch mode -> "Touch layout" (bottom left): drag any button, change the
+   size and opacity of all of them, Reset, Done. Saved in localStorage "pb-port-touch" and re-applied each time
+   the game builds its touch pad. Positions are offsets (CSS px) from the game's default spot. The movement
+   stick is not edited: it is a floating stick that appears where the left thumb lands. */
+(function () {
+  var KEY = 'pb-port-touch';
+  var cfg = { s: 1, o: 1, b: {} };
+  try { var saved = JSON.parse(localStorage.getItem(KEY) || 'null'); if (saved && saved.b) cfg = saved; } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {} }
+  function idOf(el) { return el.dataset.k || el.id; }
+  function items() {
+    var t = document.getElementById('touch');
+    return t ? [].slice.call(t.querySelectorAll('#tBtns .tb, #tBaie, #tPause')) : [];
+  }
+  function zoomOf(el) {
+    var z = 1, p = el.parentElement;
+    for (; p && p !== document.body; p = p.parentElement) { var v = parseFloat(getComputedStyle(p).zoom); if (v && v !== 1) z *= v; }
+    return z;
+  }
+  function apply() {
+    document.body.style.setProperty('--pbTouchOp', String(cfg.o));
+    items().forEach(function (el) {
+      var o = cfg.b[idOf(el)] || [0, 0], z = zoomOf(el);
+      el.style.translate = (o[0] / z) + 'px ' + (o[1] / z) + 'px';
+      el.style.scale = String(cfg.s);
+    });
+  }
+  new MutationObserver(function () {
+    var t = document.getElementById('touch');
+    if (t && !t.__pbApplied) { t.__pbApplied = true; apply(); }
+    var b = document.body;
+    if (b && b.classList.contains('pbEdit') && !b.classList.contains('paused')) stop();
+  }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+
+  var bar = null, drag = null;
+  function label() {
+    if (!bar) return;
+    bar.querySelector('[data-v=s]').textContent = Math.round(cfg.s * 100) + '%';
+    bar.querySelector('[data-v=o]').textContent = Math.round(cfg.o * 100) + '%';
+  }
+  function start() {
+    if (!document.getElementById('touch')) return;
+    document.body.classList.add('pbEdit');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'pbEditBar';
+      bar.innerHTML = '<b>Drag the buttons</b>' +
+        '<span>Size <button data-a="s-">&minus;</button><i data-v="s"></i><button data-a="s+">+</button></span>' +
+        '<span>Opacity <button data-a="o-">&minus;</button><i data-v="o"></i><button data-a="o+">+</button></span>' +
+        '<button data-a="reset">Reset</button><button data-a="done" class="done">Done</button>';
+      bar.addEventListener('click', function (e) {
+        var a = e.target.closest && e.target.closest('[data-a]');
+        if (!a) return;
+        e.stopPropagation();
+        var k = a.dataset.a;
+        if (k === 's-') cfg.s = Math.max(.7, Math.round((cfg.s - .1) * 10) / 10);
+        if (k === 's+') cfg.s = Math.min(1.5, Math.round((cfg.s + .1) * 10) / 10);
+        if (k === 'o-') cfg.o = Math.max(.3, Math.round((cfg.o - .1) * 10) / 10);
+        if (k === 'o+') cfg.o = Math.min(1, Math.round((cfg.o + .1) * 10) / 10);
+        if (k === 'reset') cfg = { s: 1, o: 1, b: {} };
+        if (k === 'done') { stop(); return; }
+        save(); apply(); label();
+      });
+      document.body.appendChild(bar);
+    }
+    label(); apply();
+  }
+  function stop() { document.body.classList.remove('pbEdit'); drag = null; save(); }
+
+  /* Capture on window runs before the game's own handlers: in edit mode a touch on a button moves it
+     instead of attacking or pausing. */
+  addEventListener('pointerdown', function (e) {
+    if (!document.body.classList.contains('pbEdit')) return;
+    var el = e.target.closest && e.target.closest('#touch #tBtns .tb, #touch #tBaie, #touch #tPause');
+    if (!el) return;
+    e.stopImmediatePropagation(); e.preventDefault();
+    var o = cfg.b[idOf(el)] || [0, 0];
+    drag = { el: el, id: idOf(el), x: e.clientX, y: e.clientY, ox: o[0], oy: o[1] };
+    el.classList.add('pbDrag');
+  }, true);
+  addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    e.stopImmediatePropagation();
+    var r = drag.el.getBoundingClientRect(), o = cfg.b[drag.id] || [0, 0];
+    var nx = drag.ox + e.clientX - drag.x, ny = drag.oy + e.clientY - drag.y;
+    var left = r.left + (nx - o[0]), top = r.top + (ny - o[1]);  /* keep the whole button on screen */
+    if (left < 0) nx -= left;
+    if (top < 0) ny -= top;
+    if (left + r.width > innerWidth) nx -= left + r.width - innerWidth;
+    if (top + r.height > innerHeight) ny -= top + r.height - innerHeight;
+    cfg.b[drag.id] = [Math.round(nx), Math.round(ny)];
+    apply();
+  }, true);
+  ['pointerup', 'pointercancel'].forEach(function (t) {
+    addEventListener(t, function (e) {
+      if (!drag) return;
+      e.stopImmediatePropagation();
+      drag.el.classList.remove('pbDrag'); drag = null; save();
+    }, true);
+  });
+  addEventListener('keydown', function (e) {
+    if (document.body.classList.contains('pbEdit') && e.key === 'Escape') { e.stopImmediatePropagation(); e.preventDefault(); stop(); }
+  }, true);
+
+  addEventListener('DOMContentLoaded', function () {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.id = 'pbEditBtn';
+    b.textContent = 'Touch layout';
+    b.addEventListener('click', function (e) { e.stopPropagation(); start(); });
+    document.body.appendChild(b);
+  });
+})();
