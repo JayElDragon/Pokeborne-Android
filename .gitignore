@@ -11,3 +11,6 @@ work-build/
 /src/
 
 __pycache__/
+
+# Reddit screenshots / post drafts
+reddit/
