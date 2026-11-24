@@ -10,7 +10,7 @@ import json, os, re, secrets, shutil, subprocess, zipfile
 ROOT = Path(__file__).resolve().parent
 SITE = ROOT / 'src/site'
 GAME_VERSION = json.loads((SITE / 'version.json').read_text(encoding='utf-8'))['v'].split('+')[0]
-VERSION_CODE, VERSION_NAME = '7', GAME_VERSION + '-android7'
+VERSION_CODE, VERSION_NAME = '9', GAME_VERSION + '-android9'
 OUT = ROOT / 'Pokeborne.apk'
 sdk = Path(os.environ.get('ANDROID_SDK_ROOT') or r'C:\Users\user\AppData\Local\Android\Sdk')
 jdk = Path(os.environ.get('JAVA_HOME_17') or r'C:\Program Files\Microsoft\jdk-17.0.21.21-hotspot')
@@ -93,8 +93,22 @@ for a, b2 in [('function Gl(e){let t=zl.palier;', 'function Gl(e){e=Math.max(e,w
     assert render_js.count(a) == 1, a
     render_js = render_js.replace(a, b2)
 
+# Offline: no account. The guest / sign-in card and the top bar "Sign in" call the port's local trainer name
+# (window.__pbWelcome / __pbRename / __pbName in android_port.js).
+ACCOUNT_PATCHES = [
+    ('${a?G(a.pseudo):t(`Invité`)}', '${G(window.__pbName?__pbName():a?a.pseudo:``)}'),
+    ('<button type="button" class="tv-cpt${a?` on`:``}">${a?`⚙`:t(`Se connecter`)}</button>`,r.querySelector(`.tv-cpt`).onclick=()=>e(i)',
+     '<button type="button" class="tv-cpt on" aria-label="Change name">✎</button>`,r.querySelector(`.tv-cpt`).onclick=n=>{n.stopPropagation(),window.__pbRename?__pbRename(i):e(i)}'),
+    ('let a=`invite`,o=()=>{let s=I();', 'let a=`invite`,o=()=>{if(window.__pbWelcome)return window.__pbWelcome(i,e,o);let s=I();'),
+]
+ACCOUNT_JS = next(f for f in sorted((SITE / 'assets').glob('compteUi-*.js')) if ACCOUNT_PATCHES[0][0] in f.read_text(encoding='utf-8'))
+account_js = ACCOUNT_JS.read_text(encoding='utf-8')
+for old, new in ACCOUNT_PATCHES:
+    assert account_js.count(old) == 1, old
+    account_js = account_js.replace(old, new)
+
 COMPRESS = {'.js', '.json', '.html', '.css', '.webmanifest', '.ttf', '.bin'}
-SKIP = {SITE / 'index.html', SITE / 'sw.js', INPUT_JS, RENDER_JS}
+SKIP = {SITE / 'index.html', SITE / 'sw.js', INPUT_JS, RENDER_JS, ACCOUNT_JS}
 with zipfile.ZipFile(build / 'resources.apk') as zi, zipfile.ZipFile(build / 'unsigned.apk', 'w') as zo:
     for info in zi.infolist():
         zo.writestr(info, zi.read(info.filename))
@@ -102,6 +116,7 @@ with zipfile.ZipFile(build / 'resources.apk') as zi, zipfile.ZipFile(build / 'un
     zo.writestr('assets/www/index.html', index, compress_type=zipfile.ZIP_DEFLATED)
     zo.writestr('assets/www/assets/' + INPUT_JS.name, input_js, compress_type=zipfile.ZIP_DEFLATED)
     zo.writestr('assets/www/assets/' + RENDER_JS.name, render_js, compress_type=zipfile.ZIP_DEFLATED)
+    zo.writestr('assets/www/assets/' + ACCOUNT_JS.name, account_js, compress_type=zipfile.ZIP_DEFLATED)
     zo.writestr('assets/www/_ext/fonts.css', fonts_css, compress_type=zipfile.ZIP_DEFLATED)
     zo.write(ROOT / 'port/android_port.js', 'assets/www/android_port.js', compress_type=zipfile.ZIP_DEFLATED)
     zo.write(ROOT / 'port/android_port.css', 'assets/www/android_port.css', compress_type=zipfile.ZIP_DEFLATED)

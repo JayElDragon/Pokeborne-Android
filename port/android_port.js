@@ -162,3 +162,86 @@ addEventListener('load', function () {
     document.body.appendChild(b);
   });
 })();
+/* Local trainer name instead of the online account. The port is offline, so the sign-in / guest screens are
+   replaced (patched compteUi chunk calls these hooks): first launch asks for a trainer name, the Home top bar
+   shows it with a pencil to change it. Stored in localStorage "pb-port-name". Same rules as the game's own
+   account names: 3 to 16 characters, letters, digits, space, dash. */
+(function () {
+  var KEY = 'pb-port-name';
+  var OK = /^[\p{L}\p{N} -]{3,16}$/u;
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function get() { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } }
+  function set(v) {
+    try { localStorage.setItem(KEY, v); } catch (e) {}
+    [].forEach.call(document.querySelectorAll('.tv-nom'), function (el) { el.textContent = v; });
+    dispatchEvent(new Event('pb-meta'));
+  }
+  function clean(v) { return String(v || '').replace(/\s+/g, ' ').trim(); }
+  window.__pbName = function () { return get() || 'Trainer'; };
+
+  /* Name form markup shared by the welcome card and the rename dialog. */
+  function form(value, button) {
+    return '<form class="pbName" autocomplete="off">' +
+      '<input name="n" maxlength="16" spellcheck="false" placeholder="Trainer name" value="' + esc(value) + '">' +
+      '<p class="pbNameHint">3 to 16 characters: letters, numbers, space, dash.</p>' +
+      '<button type="submit" class="tc-go">' + button + '</button></form>';
+  }
+  function wire(root, done) {
+    var f = root.querySelector('form.pbName'), inp = f.n, btn = f.querySelector('button');
+    var check = function () { btn.disabled = !OK.test(clean(inp.value)); };
+    inp.addEventListener('input', check);
+    inp.addEventListener('keydown', function (e) { e.stopPropagation(); });  /* typing must not drive the game */
+    f.addEventListener('submit', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var v = clean(inp.value);
+      if (!OK.test(v)) return;
+      set(v); inp.blur(); done(v);
+    });
+    check();
+    return inp;
+  }
+
+  /* Welcome card on the title screen (replaces Guest / Sign in). */
+  window.__pbWelcome = function (card, play, rerender) {
+    var name = get();
+    if (name && !card.__pbEdit) {
+      card.innerHTML = '<div class="tc-ban">Hi ' + esc(name) + '!</div>' +
+        '<ul class="tc-l"><li><i>💾</i>Your progress is saved on this device.</li></ul>' +
+        '<button type="button" class="tc-go">Play!</button><button type="button" class="tc-gerer">Change name</button>';
+      card.querySelector('.tc-go').onclick = function () { play(); };
+      card.querySelector('.tc-gerer').onclick = function () { card.__pbEdit = true; rerender(); };
+      return;
+    }
+    card.innerHTML = '<div class="tc-ban">' + (name ? 'Change your name' : 'Welcome, trainer!') + '</div>' +
+      '<ul class="tc-l"><li><i>✎</i>Choose your trainer name.</li><li><i>💾</i>Your progress is saved on this device.</li></ul>' +
+      form(name, name ? 'Save' : 'Play!');
+    var first = !name;
+    var inp = wire(card, function () { card.__pbEdit = false; if (first) play(); else rerender(); });
+    setTimeout(function () { if (!name) inp.focus(); }, 300);
+  };
+
+  /* Players who had already chosen "guest" before this version never see the welcome card again:
+     ask them once on the Home screen. */
+  addEventListener('load', function () {
+    setTimeout(function () {
+      var guest = false;
+      try { guest = !!localStorage.getItem('pokeborne.invite'); } catch (e) {}
+      if (!get() && guest && document.body.classList.contains('home') && !/[?&]mode=/.test(location.search)) window.__pbRename(null, true);
+    }, 1500);
+  });
+
+  /* Pencil in the Home top bar: small dialog to change the name. */
+  window.__pbRename = function (refresh, first) {
+    if (document.getElementById('pbRename')) return;
+    var d = document.createElement('div');
+    d.id = 'pbRename';
+    d.innerHTML = '<div class="pbBox"><h3>' + (first ? 'Choose your trainer name' : 'Trainer name') + '</h3>' +
+      form(get(), 'Save') + (first ? '' : '<button type="button" class="pbCancel">Cancel</button>') + '</div>';
+    document.body.appendChild(d);
+    var close = function () { d.remove(); };
+    d.addEventListener('click', function (e) { e.stopPropagation(); if (e.target === d && !first) close(); });
+    if (!first) d.querySelector('.pbCancel').onclick = close;
+    var inp = wire(d, function () { close(); if (refresh) refresh(); });
+    setTimeout(function () { inp.focus(); inp.select(); }, 50);
+  };
+})();

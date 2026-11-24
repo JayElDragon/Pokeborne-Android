@@ -10,8 +10,11 @@ and Pokémon belongs to Nintendo, Game Freak and The Pokémon Company. It is not
 ## What the port does
 
 - **Offline:** no INTERNET permission. The game's own "native app" path is enabled (`window.Capacitor`), which skips
-  the service worker, the online update check and Google sign-in. Online-only features (account, leaderboards,
-  PvP Gauntlet, telemetry) fail quietly. Progress is kept on the device (guest profile).
+  the service worker, the online update check and Google sign-in. Online-only features (leaderboards, PvP Gauntlet,
+  telemetry) fail quietly. Progress is kept on the device.
+- **No account, just a trainer name:** the Guest / Sign in screens are replaced by a trainer-name field on first
+  launch (3–16 characters). The name shows in the Home top bar; the ✎ button changes it. Sign-in prompts on other
+  screens are hidden.
 - **On-screen controls:** the game's own touch pad shows up as soon as a run starts (not only after the first touch),
   with a visible resting stick. Readable button labels (ATK, HEAVY, ROLL, GUARD, EXEC.).
   Using the physical controller hides them, touching the screen brings them back.
@@ -35,7 +38,7 @@ Paths are at the top of `build_pokeborne.py` (`ANDROID_SDK_ROOT` / `JAVA_HOME_17
    The first build creates a signing key in `android/` (`pokeborne.keystore` + `keystore.properties`); keep it,
    or later builds cannot update the installed app.
 
-Game files are never edited on disk: the few patches (stick curve, ATK label, resolution / quality caps) are applied
+Game files are never edited on disk: the few patches (stick curve, ATK label, resolution / quality caps, account screens → trainer name) are applied
 to the minified chunks at build time and each one checks its anchor, so a new game build fails loudly instead of
 breaking silently.
 
@@ -45,7 +48,7 @@ breaking silently.
 |---|---|
 | `build_pokeborne.py` | builds and signs the APK, applies the build-time patches |
 | `android/` | manifest and `MainActivity.java` (WebView, asset server, 60/120 Hz bridge) |
-| `port/android_port.js` | runs first on every page: native flag, popups, touch pad, refresh option, layout editor |
+| `port/android_port.js` | runs first on every page: native flag, popups, touch pad, refresh option, layout editor, trainer name |
 | `port/android_port.css` | stick ghost, button labels, Hz pill, layout editor, no scrollbars |
 
 Port by JayElDragon.
