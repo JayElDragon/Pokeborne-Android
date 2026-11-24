@@ -1,0 +1,13 @@
+# Signing key and its password: never in the repo
+android/*.keystore
+android/keystore.properties
+
+# Build output
+work-build/
+*.apk
+*.apk.idsig
+
+# Game files (mirror of play.pokeborne.fun, belong to their authors): put them in src/ yourself, see README
+/src/
+
+__pycache__/

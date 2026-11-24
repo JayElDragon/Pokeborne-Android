@@ -1,0 +1,38 @@
+/* Pokeborne Android port (JayElDragon): on-screen control tweaks, loaded after the game's own CSS. */
+
+/* No scrollbars anywhere (they showed as a thin line on the right edge); scrolling still works. */
+* { scrollbar-width: none !important; }
+*::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+
+/* The game's floating stick is invisible until touched: show a resting ghost bottom-left so players
+   know where to put the thumb. While touched (.on) the game's own inline position applies again. */
+body.touch.touchNow #touch #tStickBase:not(.on) {
+  opacity: .55;
+  transform: translate(calc(70px + env(safe-area-inset-left)), calc(100vh - 116px - 60px)) !important;
+}
+body.touch.touchNow #touch #tStickBase:not(.on) #tStickKnob { transform: translate(0, 0) !important; }
+
+/* Readable button labels: the game's blackletter font made "HIT" look like "IIIT". */
+body.touch #touch .tb span {
+  font-family: "Barlow Semi Condensed", "Arial Narrow", sans-serif !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .05em !important;
+  line-height: 1.05;
+  text-shadow: 0 1px 2px #000, 0 0 4px #000;
+}
+body.touch #touch .tb span { font-size: 13px !important; }
+body.touch #touch .tb.big span { font-size: 22px !important; letter-spacing: .08em !important; }
+body.touch #touch .tb.sm span { font-size: 11px !important; }
+
+/* 60/120 Hz option pill, Home screen only. */
+#portHz { display: none; }
+body.home #portHz {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  position: fixed; left: calc(14px + env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 50; min-width: 64px; padding: 6px 10px; border-radius: 12px; cursor: pointer;
+  background: #0a0c16d0; color: #ffe6b0; border: 1.5px solid #ffd27a88;
+  font: 600 13px/1 "Barlow Semi Condensed", "Arial Narrow", sans-serif; letter-spacing: .04em;
+}
+body.home #portHz small { font-size: 9px; color: #c9b48a; text-transform: uppercase; letter-spacing: .1em; }
+body.home #portHz:active, body.home #portHz:focus-visible { border-color: #ffd27a; background: #2a1a0ed0; outline: none; }
