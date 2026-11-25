@@ -22,9 +22,13 @@ and Pokémon belongs to Nintendo, Game Freak and The Pokémon Company. It is not
   and opacity (30–100%), Reset, Done. Saved on the device.
 - **Smoother stick:** 15% dead zone, full speed at 92% of the travel with an eased curve, sprint only at the edge
   (the original reached full speed at 55%).
-- **60 / 120 Hz:** 60 Hz by default (at 120 Hz the unmodified game kept the GPU at 1.1 GHz / 93% and the fan loud).
-  A pill on the Home screen switches to 120 Hz, which caps the render resolution at 1.25x and the quality tier at 2,
-  measured at the same GPU load as 60 Hz.
+- **Performance panel** (Home screen, bottom left):
+  - *Graphics*: High (default) / Balanced (1.5x) / Low (1.0x, no MSAA) / Very low (0.75x, no shadows). The game's own
+    auto-quality still works inside the chosen limit.
+  - *Frame rate limit*: off or 30 FPS (the game is time-based, so it keeps its normal speed).
+  - *Display*: 60 Hz (default) or 120 Hz. 120 Hz caps resolution at 1.25x and the quality tier at 2: same GPU load
+    as 60 Hz on the Odin (unmodified 120 Hz ran the GPU at 1.1 GHz / 93%).
+  - Measured on the Odin 3 at 60 Hz (GPU busy): High 54%, Low 29%, Very low 23%, High + 30 FPS 30%.
 - Back button = Escape, phone warning and telemetry popup pre-answered, scrollbars hidden.
 
 ## Build
@@ -38,7 +42,7 @@ Paths are at the top of `build_pokeborne.py` (`ANDROID_SDK_ROOT` / `JAVA_HOME_17
    The first build creates a signing key in `android/` (`pokeborne.keystore` + `keystore.properties`); keep it,
    or later builds cannot update the installed app.
 
-Game files are never edited on disk: the few patches (stick curve, ATK label, resolution / quality caps, account screens → trainer name) are applied
+Game files are never edited on disk: the few patches (stick curve, ATK label, resolution / quality caps, auto-quality frame scale, account screens → trainer name) are applied
 to the minified chunks at build time and each one checks its anchor, so a new game build fails loudly instead of
 breaking silently.
 
@@ -48,7 +52,7 @@ breaking silently.
 |---|---|
 | `build_pokeborne.py` | builds and signs the APK, applies the build-time patches |
 | `android/` | manifest and `MainActivity.java` (WebView, asset server, 60/120 Hz bridge) |
-| `port/android_port.js` | runs first on every page: native flag, popups, touch pad, refresh option, layout editor, trainer name |
-| `port/android_port.css` | stick ghost, button labels, Hz pill, layout editor, no scrollbars |
+| `port/android_port.js` | runs first on every page: native flag, popups, touch pad, performance panel, layout editor, trainer name |
+| `port/android_port.css` | stick ghost, button labels, performance panel, layout editor, no scrollbars |
 
 Port by JayElDragon.

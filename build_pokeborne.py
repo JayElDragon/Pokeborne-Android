@@ -10,7 +10,7 @@ import json, os, re, secrets, shutil, subprocess, zipfile
 ROOT = Path(__file__).resolve().parent
 SITE = ROOT / 'src/site'
 GAME_VERSION = json.loads((SITE / 'version.json').read_text(encoding='utf-8'))['v'].split('+')[0]
-VERSION_CODE, VERSION_NAME = '9', GAME_VERSION + '-android9'
+VERSION_CODE, VERSION_NAME = '10', GAME_VERSION + '-android10'
 OUT = ROOT / 'Pokeborne.apk'
 sdk = Path(os.environ.get('ANDROID_SDK_ROOT') or r'C:\Users\user\AppData\Local\Android\Sdk')
 jdk = Path(os.environ.get('JAVA_HOME_17') or r'C:\Program Files\Microsoft\jdk-17.0.21.21-hotspot')
@@ -89,7 +89,10 @@ assert render_js.count(old) == 1, old
 render_js = render_js.replace(old, 'var Pl=Math.min(devicePixelRatio,window.__pbMaxPR||2);')
 # 120 Hz mode also keeps a minimum quality tier (window.__pbMinPalier, 2 by default; see android_port.js).
 for a, b2 in [('function Gl(e){let t=zl.palier;', 'function Gl(e){e=Math.max(e,window.__pbMinPalier||0);let t=zl.palier;'),
-              ('t!==zl.palier&&Gl(t)', '(t!==zl.palier||window.__pbMinPalier)&&Gl(t)')]:
+              ('t!==zl.palier&&Gl(t)', '(t!==zl.palier||window.__pbMinPalier)&&Gl(t)'),
+              # With the port's 30 FPS limit, the auto-quality would read 33 ms frames as "slow device" and drop
+              # to the lowest tier: it measures frame times relative to the limit instead (window.__pbFrameScale).
+              ('let n=Math.min(100,t);$.avg+=(n-$.avg)*.05', 'let n=Math.min(100,t)/(window.__pbFrameScale||1);$.avg+=(n-$.avg)*.05')]:
     assert render_js.count(a) == 1, a
     render_js = render_js.replace(a, b2)
 

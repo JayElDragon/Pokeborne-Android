@@ -22,30 +22,110 @@ addEventListener('load', function () {
     } catch (e) {}
   }, 1500);
 });
-/* Refresh rate option (60 Hz default, 120 Hz optional). At 120 Hz the game draws twice as many frames, so the
-   patched render chunk caps resolution at 1.25x (window.__pbMaxPR) and quality tier at >= 2 (window.__pbMinPalier:
-   shadows every 2nd frame, no MSAA, one post pass off). Measured on the Odin: GPU 660 MHz / ~71% busy, the same
-   as 60 Hz mode (unmodified 120 Hz: 1.1 GHz / 93%). Tuning keys for tests: pb-port-pr120, pb-port-minp120.
-   Toggle: pill on the Home screen. */
+/* Performance options (Home screen pill "Performance"): refresh rate, graphics preset and an FPS limit, for
+   weaker phones or a cooler / longer-lasting handheld. Applied at page load through the patched render chunk:
+   window.__pbMaxPR caps the render resolution, window.__pbMinPalier keeps the game's own quality tier at or above
+   a level (1: shadows every 2nd frame, less rain · 2: + no MSAA, one post pass off · 3: + no shadows, little rain).
+   The game's automatic quality still works inside those limits.
+   120 Hz: the game draws twice as many frames, so it also caps at 1.25x / tier 2 (measured on the Odin: GPU
+   660 MHz / ~71% busy, same as 60 Hz; unmodified 120 Hz ran 1.1 GHz / 93%).
+   30 FPS limit: requestAnimationFrame only fires every ~33 ms. The game is time-based (THREE.Timer), so it
+   runs at normal speed, just less smooth.
+   Storage: refresh rate in the Android app (AndroidPort bridge), the rest in localStorage "pb-port-perf". */
 (function () {
-  var hz = 60;
+  var PRESETS = {
+    high: { name: 'High', pr: 2, tier: 0, info: 'Full resolution and effects' },
+    bal: { name: 'Balanced', pr: 1.5, tier: 1, info: 'Sharper than Low, lighter shadows' },
+    low: { name: 'Low', pr: 1, tier: 2, info: 'Lower resolution, no anti-aliasing' },
+    vlow: { name: 'Very low', pr: 0.75, tier: 3, info: 'No shadows, minimum effects' }
+  };
+  var hz = 60, perf = { q: 'high', fps: 0 };
   try { hz = window.AndroidPort ? AndroidPort.getHz() : 60; } catch (e) {}
+  try { var s = JSON.parse(localStorage.getItem('pb-port-perf') || 'null'); if (s && PRESETS[s.q]) perf = s; } catch (e) {}
+  var p = PRESETS[perf.q], pr = p.pr, tier = p.tier;
   if (hz >= 90) {
-    window.__pbMaxPR = parseFloat(localStorage.getItem('pb-port-pr120')) || 1.25;
+    pr = Math.min(pr, parseFloat(localStorage.getItem('pb-port-pr120')) || 1.25);
     var mp = localStorage.getItem('pb-port-minp120');
-    window.__pbMinPalier = mp === null ? 2 : +mp;
+    tier = Math.max(tier, mp === null ? 2 : +mp);
   }
+  window.__pbMaxPR = pr;
+  if (tier > 0) window.__pbMinPalier = tier;
+
+  if (perf.fps === 30) {
+    window.__pbFrameScale = 2;  /* auto-quality judges frames against 30 FPS, not 60 */
+    /* Frame limiter: a vsync is either "on" (every callback queued for it runs: the game has several loops)
+       or skipped (callbacks wait for the next one). Our id -> current native id, so cancelAnimationFrame
+       keeps working. */
+    var raf = window.requestAnimationFrame.bind(window), caf = window.cancelAnimationFrame.bind(window);
+    var next = 1, live = {}, on = -1e9, step = 1000 / 30 - 3;
+    window.requestAnimationFrame = function (cb) {
+      var id = next++;
+      var tick = function (t) {
+        if (t !== on) {
+          if (t - on < step) { live[id] = raf(tick); return; }
+          on = t;
+        }
+        delete live[id];
+        cb(t);
+      };
+      live[id] = raf(tick);
+      return id;
+    };
+    window.cancelAnimationFrame = function (id) { if (live[id]) { caf(live[id]); delete live[id]; } };
+  }
+
+  function summary() { return (hz >= 90 ? '120' : '60') + ' Hz · ' + p.name + (perf.fps === 30 ? ' · 30 FPS' : ''); }
+  function seg(key, cur, items) {
+    return '<div class="pbSeg" data-k="' + key + '">' + items.map(function (it) {
+      return '<button type="button" data-v="' + it[0] + '" class="' + (String(it[0]) === String(cur) ? 'on' : '') + '">' + it[1] + '</button>';
+    }).join('') + '</div>';
+  }
+  function open() {
+    if (document.getElementById('pbPerf')) return;
+    var st = { hz: hz >= 90 ? 120 : 60, q: perf.q, fps: perf.fps };
+    var d = document.createElement('div');
+    d.id = 'pbPerf';
+    var render = function () {
+      d.innerHTML = '<div class="pbBox"><h3>Performance</h3>' +
+        '<label>Graphics</label>' + seg('q', st.q, [['high', 'High'], ['bal', 'Balanced'], ['low', 'Low'], ['vlow', 'Very low']]) +
+        '<p class="pbInfo">' + PRESETS[st.q].info + '</p>' +
+        '<label>Frame rate limit</label>' + seg('fps', st.fps, [[0, 'Off'], [30, '30 FPS']]) +
+        '<p class="pbInfo">' + (st.fps === 30 ? 'Saves battery and heat, less smooth' : 'As smooth as the display allows') + '</p>' +
+        '<label>Display</label>' + seg('hz', st.hz, [[60, '60 Hz'], [120, '120 Hz']]) +
+        '<p class="pbInfo">' + (st.hz === 120 ? 'Smoother; graphics are capped to keep the same heat' : 'Cooler and quieter (recommended)') + '</p>' +
+        '<div class="pbRow"><button type="button" class="pbCancel">Cancel</button><button type="button" class="tc-go pbApply">Apply</button></div></div>';
+    };
+    render();
+    d.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (e.target === d) { d.remove(); return; }
+      var b = e.target.closest && e.target.closest('button');
+      if (!b) return;
+      var segEl = b.closest('.pbSeg');
+      if (segEl) {
+        var k = segEl.dataset.k, v = b.dataset.v;
+        st[k] = k === 'q' ? v : +v;
+        render();
+        return;
+      }
+      if (b.classList.contains('pbCancel')) { d.remove(); return; }
+      if (b.classList.contains('pbApply')) {
+        try { localStorage.setItem('pb-port-perf', JSON.stringify({ q: st.q, fps: st.fps })); } catch (err) {}
+        try { localStorage.removeItem('pb-qualite-auto'); } catch (err) {}  /* let the game re-measure */
+        try { if (window.AndroidPort) AndroidPort.setHz(st.hz); } catch (err) {}
+        setTimeout(function () { location.reload(); }, 250);
+      }
+    });
+    document.body.appendChild(d);
+  }
+  window.__pbPerfOpen = open;
   addEventListener('DOMContentLoaded', function () {
     var b = document.createElement('button');
     b.type = 'button';
     b.id = 'portHz';
-    b.innerHTML = '<span>' + (hz >= 90 ? '120' : '60') + ' Hz</span><small>' + (hz >= 90 ? 'smooth' : 'cool') + '</small>';
-    b.title = 'Display refresh rate';
-    b.addEventListener('click', function (e) {
-      e.preventDefault(); e.stopPropagation();
-      try { AndroidPort.setHz(hz >= 90 ? 60 : 120); } catch (err) {}
-      setTimeout(function () { location.reload(); }, 250);
-    });
+    b.innerHTML = '<span>Performance</span><small>' + summary() + '</small>';
+    b.title = 'Performance options';
+    b.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); open(); });
     document.body.appendChild(b);
   });
 })();
