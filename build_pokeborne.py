@@ -10,7 +10,7 @@ import json, os, re, secrets, shutil, subprocess, zipfile
 ROOT = Path(__file__).resolve().parent
 SITE = ROOT / 'src/site'
 GAME_VERSION = json.loads((SITE / 'version.json').read_text(encoding='utf-8'))['v'].split('+')[0]
-VERSION_CODE, VERSION_NAME = '10', GAME_VERSION + '-android10'
+VERSION_CODE, VERSION_NAME = '11', GAME_VERSION + '-android11'
 OUT = ROOT / 'Pokeborne.apk'
 sdk = Path(os.environ.get('ANDROID_SDK_ROOT') or r'C:\Users\user\AppData\Local\Android\Sdk')
 jdk = Path(os.environ.get('JAVA_HOME_17') or r'C:\Program Files\Microsoft\jdk-17.0.21.21-hotspot')
@@ -71,7 +71,6 @@ for u in re.findall(r'url\((/_ext/[^)]+)\)', fonts_css):
 # zone, full speed at 92%, eased (power 1.4) so small moves walk slowly; sprint only at the very edge.
 STICK_PATCHES = [
     ('a=i<.12?0:Math.min(1,(i-.12)/(.55-.12))', 'a=i<.15?0:Math.pow(Math.min(1,(i-.15)/(.92-.15)),1.4)'),
-    ('i>=.9?A.fullT', 'i>=.97?A.fullT'),
     # Main attack button label: ATK (user request) instead of the translated COUP/HIT.
     ('[`light`,o(`COUP`),`big`]', '[`light`,`ATK`,`big`]'),
 ]
@@ -80,6 +79,9 @@ input_js = INPUT_JS.read_text(encoding='utf-8')
 for old, new in STICK_PATCHES:
     assert input_js.count(old) == 1, old
     input_js = input_js.replace(old, new)
+# Sprint only at the very edge (the stick variable's minified name changes between game builds).
+input_js, n_sprint = re.subn(r'i>=\.9\?(\w+)\.fullT', lambda m: 'i>=.97?' + m.group(1) + '.fullT', input_js)
+assert n_sprint == 1, 'sprint anchor'
 
 # Render resolution cap: 2x by default, lowered by android_port.js in 120 Hz mode (window.__pbMaxPR).
 old = 'var Pl=Math.min(devicePixelRatio,2);'

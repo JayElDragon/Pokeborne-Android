@@ -48,8 +48,11 @@ body.paused.touch:not(.pbEdit) #pbEditBtn {
 body.pbEdit #pauseMenu { visibility: hidden !important; }
 body.pbEdit.paused #touch, body.pbEdit #touch { display: block !important; z-index: 900; }
 body.pbEdit.paused #touch #tBtns { display: block !important; }
+body.pbEdit #ctHud .ct { outline: 2px dashed #ffd27acc; outline-offset: 4px; }
 body.pbEdit #touch .tb { outline: 2px dashed #ffd27acc; outline-offset: 4px; opacity: max(var(--pbTouchOp, 1), .3); }
-body.pbEdit #touch .tb.pbDrag { outline-color: #fff; }
+body.pbEdit #touch .tb.pbDrag, body.pbEdit #ctHud .ct.pbDrag { outline-color: #fff; }
+body.pbEdit #ctHud { visibility: visible !important; opacity: 1 !important; z-index: 950; }
+body.touch #ctHud .ct { opacity: var(--pbTouchOp, 1); }
 body.pbEdit #pbEditBar {
   display: flex; align-items: center; gap: 14px; position: fixed; z-index: 1000; top: calc(10px + env(safe-area-inset-top));
   left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: 14px; background: #0a0c16eb;

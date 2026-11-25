@@ -138,10 +138,13 @@ addEventListener('load', function () {
   var cfg = { s: 1, o: 1, b: {} };
   try { var saved = JSON.parse(localStorage.getItem(KEY) || 'null'); if (saved && saved.b) cfg = saved; } catch (e) {}
   function save() { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {} }
-  function idOf(el) { return el.dataset.k || el.id; }
+  function idOf(el) {
+    if (el.classList.contains('ct')) return 'tm' + [].indexOf.call(el.parentElement.children, el);  /* TM 1 / TM 2 */
+    return el.dataset.k || el.id;
+  }
+  var SEL = '#touch #tBtns .tb, #touch #tBaie, #touch #tPause, #ctHud .ct';
   function items() {
-    var t = document.getElementById('touch');
-    return t ? [].slice.call(t.querySelectorAll('#tBtns .tb, #tBaie, #tPause')) : [];
+    return document.getElementById('touch') ? [].slice.call(document.querySelectorAll(SEL)) : [];
   }
   function zoomOf(el) {
     var z = 1, p = el.parentElement;
@@ -202,7 +205,7 @@ addEventListener('load', function () {
      instead of attacking or pausing. */
   addEventListener('pointerdown', function (e) {
     if (!document.body.classList.contains('pbEdit')) return;
-    var el = e.target.closest && e.target.closest('#touch #tBtns .tb, #touch #tBaie, #touch #tPause');
+    var el = e.target.closest && e.target.closest(SEL);
     if (!el) return;
     e.stopImmediatePropagation(); e.preventDefault();
     var o = cfg.b[idOf(el)] || [0, 0];

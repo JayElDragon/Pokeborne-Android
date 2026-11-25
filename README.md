@@ -18,7 +18,7 @@ and Pokémon belongs to Nintendo, Game Freak and The Pokémon Company. It is not
 - **On-screen controls:** the game's own touch pad shows up as soon as a run starts (not only after the first touch),
   with a visible resting stick. Readable button labels (ATK, HEAVY, ROLL, GUARD, EXEC.).
   Using the physical controller hides them, touching the screen brings them back.
-- **Touch layout editor:** pause a run → **Touch layout** (bottom left): drag any button, change size (70–150%)
+- **Touch layout editor:** pause a run → **Touch layout** (bottom left): drag any button (TM buttons too), change size (70–150%)
   and opacity (30–100%), Reset, Done. Saved on the device.
 - **Smoother stick:** 15% dead zone, full speed at 92% of the travel with an eased curve, sprint only at the edge
   (the original reached full speed at 55%).
@@ -30,6 +30,8 @@ and Pokémon belongs to Nintendo, Game Freak and The Pokémon Company. It is not
     as 60 Hz on the Odin (unmodified 120 Hz ran the GPU at 1.1 GHz / 93%).
   - Measured on the Odin 3 at 60 Hz (GPU busy): High 54%, Low 29%, Very low 23%, High + 30 FPS 30%.
 - Back button = Escape, phone warning and telemetry popup pre-answered, scrollbars hidden.
+
+Tested with game build **0.14.32** (see `src/site/version.json`).
 
 ## Build
 
